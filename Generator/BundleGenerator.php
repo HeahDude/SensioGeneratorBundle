@@ -12,7 +12,6 @@
 namespace Sensio\Bundle\GeneratorBundle\Generator;
 
 use Sensio\Bundle\GeneratorBundle\Model\Bundle;
-use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * Generates a bundle.
@@ -21,13 +20,6 @@ use Symfony\Component\Filesystem\Filesystem;
  */
 class BundleGenerator extends Generator
 {
-    private $filesystem;
-
-    public function __construct(Filesystem $filesystem)
-    {
-        $this->filesystem = $filesystem;
-    }
-
     public function generateBundle(Bundle $bundle)
     {
         $dir = $bundle->getTargetDirectory();

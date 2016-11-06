@@ -48,6 +48,18 @@ class GenerateBundleCommandTest extends GenerateCommandTest
 
         return array(
             array(
+                array('namespace' => 'Foo/Bar', '--dir' => $tmp),
+                // shared, namespace, bundle name, directory, format
+                "\n\n\n\n\n\n",
+                array('Foo\BarBundle', 'FooBarBundle', $tmp.'/', 'annotation', false),
+            ),
+            array(
+                array('--namespace' => 'Foo/Bar', '--dir' => $tmp),
+                // shared, namespace, bundle name, directory, format
+                "\n\n\n\n\n\n",
+                array('Foo\BarBundle', 'FooBarBundle', $tmp.'/', 'annotation', false),
+            ),
+            array(
                 array('--shared' => true, '--dir' => $tmp, '--format' => 'annotation'),
                 // shared, namespace, bundle name, directory, format
                 "\nFoo/BarBundle\n\n\n\n",
@@ -106,8 +118,16 @@ class GenerateBundleCommandTest extends GenerateCommandTest
 
         return array(
             array(
+                array('--dir' => $tmp, 'namespace' => 'Foo/Bar'),
+                array('Foo\BarBundle', 'FooBarBundle', $tmp.'/', 'annotation', false),
+            ),
+            array(
+                array('--dir' => $tmp, '--namespace' => 'Foo/BarBundle'),
+                array('Foo\BarBundle', 'FooBarBundle', $tmp.'/', 'annotation', false),
+            ),
+            array(
                 array('--shared' => true, '--dir' => $tmp, '--namespace' => 'Foo/BarBundle'),
-                array('Foo\BarBundle', 'FooBarBundle', $tmp.'/', 'annotation', true),
+                array('Foo\BarBundle', 'FooBarBundle', $tmp.'/', 'xml', true),
             ),
             array(
                 array('--shared' => true, '--dir' => $tmp, '--namespace' => 'Foo/BarBundle', '--format' => 'yml', '--bundle-name' => 'BarBundle'),
@@ -124,12 +144,12 @@ class GenerateBundleCommandTest extends GenerateCommandTest
     {
         $command = $this
             ->getMockBuilder('Sensio\Bundle\GeneratorBundle\Command\GenerateBundleCommand')
-            ->setMethods(array('checkAutoloader', 'updateKernel', 'updateRouting'))
+            ->setMethods(array('tryAutoload', 'tryUpdateKernel', 'tryUpdateRouting', 'tryUpdateConfiguration'))
             ->getMock()
         ;
 
         $command->setContainer($container);
-        $command->setHelperSet($this->getHelperSet($input));
+        $command->setStyle($this->getStyle($input));
         $command->setGenerator($generator);
 
         return $command;

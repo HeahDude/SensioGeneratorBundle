@@ -11,13 +11,32 @@
 
 namespace Sensio\Bundle\GeneratorBundle\Tests\Command;
 
+use Sensio\Bundle\GeneratorBundle\Command\Style\SensioGeneratorStyle;
 use Symfony\Component\Console\Helper\HelperSet;
 use Symfony\Component\Console\Helper\FormatterHelper;
 use Sensio\Bundle\GeneratorBundle\Command\Helper\QuestionHelper;
+use Symfony\Component\Console\Helper\SymfonyQuestionHelper;
+use Symfony\Component\Console\Input\StringInput;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\DependencyInjection\Container;
 
 abstract class GenerateCommandTest extends \PHPUnit_Framework_TestCase
 {
+    protected function getStyle($input)
+    {
+        $style = new SensioGeneratorStyle(new StringInput($input), new NullOutput());
+
+        $question = new SymfonyQuestionHelper();
+        $question->setInputStream($this->getInputStream($input));
+
+        $reflectionProperty = new \ReflectionProperty('Symfony\Component\Console\Style\SymfonyStyle', 'questionHelper');
+        $reflectionProperty->setAccessible(true);
+
+        $reflectionProperty->setValue($style, $question);
+
+        return $style;
+    }
+
     protected function getHelperSet($input)
     {
         $question = new QuestionHelper();
