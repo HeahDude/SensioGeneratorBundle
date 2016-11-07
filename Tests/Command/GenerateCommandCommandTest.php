@@ -44,6 +44,11 @@ class GenerateCommandCommandTest extends GenerateCommandTest
         return array(
             array(
                 array(),
+                "FooBar\napp:foo-bar\n",
+                array('FooBarBundle', 'app:foo-bar'),
+            ),
+            array(
+                array(),
                 "FooBarBundle\napp:foo-bar\n",
                 array('FooBarBundle', 'app:foo-bar'),
             ),
@@ -53,15 +58,31 @@ class GenerateCommandCommandTest extends GenerateCommandTest
                 "app:foo-bar\n",
                 array('FooBarBundle', 'app:foo-bar'),
             ),
+            array(
+                array('bundle' => 'FooBar'),
+                "app:foo-bar\n",
+                array('FooBarBundle', 'app:foo-bar'),
+            ),
 
             array(
                 array('name' => 'app:foo-bar'),
                 "FooBarBundle\n",
                 array('FooBarBundle', 'app:foo-bar'),
             ),
+            array(
+                array('name' => 'app:foo-bar'),
+                "FooBar\n",
+                array('FooBarBundle', 'app:foo-bar'),
+            ),
 
             array(
                 array('bundle' => 'FooBarBundle', 'name' => 'app:foo-bar'),
+                '',
+                array('FooBarBundle', 'app:foo-bar'),
+            ),
+
+            array(
+                array('bundle' => 'FooBar', 'name' => 'app:foo-bar'),
                 '',
                 array('FooBarBundle', 'app:foo-bar'),
             ),
@@ -73,13 +94,11 @@ class GenerateCommandCommandTest extends GenerateCommandTest
      */
     public function testNonInteractiveCommand($options, $expected)
     {
-        list($bundle, $name) = $expected;
-
         $generator = $this->getGenerator();
         $generator
             ->expects($this->once())
             ->method('generate')
-            ->with($this->getBundle(), $name)
+            ->with($this->getBundle(), $expected)
         ;
 
         $tester = $this->getCommandTester($generator);
@@ -88,12 +107,14 @@ class GenerateCommandCommandTest extends GenerateCommandTest
 
     public function getNonInteractiveCommandData()
     {
-        $tmp = sys_get_temp_dir();
-
         return array(
             array(
+                array('bundle' => 'FooBar', 'name' => 'app:my-command'),
+                'app:my-command',
+            ),
+            array(
                 array('bundle' => 'FooBarBundle', 'name' => 'app:my-command'),
-                array('FooBarBundle', 'app:my-command'),
+                'app:my-command',
             ),
         );
     }
@@ -103,7 +124,7 @@ class GenerateCommandCommandTest extends GenerateCommandTest
         $command = new GenerateCommandCommand();
 
         $command->setContainer($this->getContainer());
-        $command->setHelperSet($this->getHelperSet($input));
+        $command->setStyle($this->getStyle($input));
         $command->setGenerator($generator);
 
         return $command;
@@ -120,7 +141,7 @@ class GenerateCommandCommandTest extends GenerateCommandTest
 
         $command = new GenerateCommandCommand();
         $command->setContainer($this->getContainer());
-        $command->setHelperSet($this->getHelperSet($input));
+        $command->setStyle($this->getStyle($input));
         $command->setGenerator($this->getGenerator());
 
         $application->add($command);

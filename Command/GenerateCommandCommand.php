@@ -14,7 +14,6 @@ namespace Sensio\Bundle\GeneratorBundle\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\Question;
 use Sensio\Bundle\GeneratorBundle\Generator\CommandGenerator;
 
 /**
@@ -24,8 +23,6 @@ use Sensio\Bundle\GeneratorBundle\Generator\CommandGenerator;
  */
 class GenerateCommandCommand extends GeneratorCommand
 {
-    const MAX_ATTEMPTS = 5;
-
     /**
      * @see Command
      */
@@ -43,11 +40,11 @@ The <info>generate:command</info> command helps you generate new commands
 inside bundles. Provide the bundle name as the first argument and the command
 name as the second argument:
 
-<info>php app/console generate:command AppBundle blog:publish-posts</info>
+<info>php app/console generate:command App blog:publish-posts</info>
 
-If any of the arguments is missing, the command will ask for their values
-interactively. If you want to disable any user interaction, use
-<comment>--no-interaction</comment>, but don't forget to pass all needed arguments.
+If any of the arguments is missing, the command will ask for their values interactively. 
+To deactivate the interaction mode, simply use the <comment>--no-interaction</comment> option or its
+alias <comment>-n</comment>, without forgetting to pass all needed options:
 
 Every generated file is based on a template. There are default templates but they can
 be overridden by placing custom templates in one of the following locations, by order of priority:
@@ -64,80 +61,51 @@ EOT
 
     public function interact(InputInterface $input, OutputInterface $output)
     {
-        $bundle = $input->getArgument('bundle');
+        $io = $this->getStyle($input, $output);
+        $bundle = $this->addBundleSuffix($input->getArgument('bundle'));
         $name = $input->getArgument('name');
 
-        if (null !== $bundle && null !== $name) {
-            return;
-        }
-
-        $questionHelper = $this->getQuestionHelper();
-        $questionHelper->writeSection($output, 'Welcome to the Symfony command generator');
+        $io->title('Welcome to the Symfony command generator');
 
         // bundle
-        if (null !== $bundle) {
-            $output->writeln(sprintf('Bundle name: %s', $bundle));
+        if (!empty($bundle)) {
+            $io->text(sprintf('Bundle name: <info>%s</info>', $bundle));
         } else {
-            $output->writeln(array(
-                '',
-                'First, you need to give the name of the bundle where the command will',
-                'be generated (e.g. <comment>AppBundle</comment>)',
+            $io->text(array(
+                'First, you need to give the name of the bundle where the command will be generated',
+                '(e.g. <comment>App</comment>), it will be suffixed by <comment>Bundle</comment> automatically.',
                 '',
             ));
 
-            $bundleNames = array_keys($this->getContainer()->get('kernel')->getBundles());
-
-            $question = new Question($questionHelper->getQuestion('Bundle name', $bundle), $bundle);
-            $question->setAutocompleterValues($bundleNames);
-            $question->setValidator(function ($answer) use ($bundleNames) {
-                if (!in_array($answer, $bundleNames)) {
-                    throw new \RuntimeException(sprintf('Bundle "%s" does not exist.', $answer));
-                }
-
-                return $answer;
-            });
-            $question->setMaxAttempts(self::MAX_ATTEMPTS);
-
-            $bundle = $questionHelper->ask($input, $output, $question);
-            $input->setArgument('bundle', $bundle);
+            $bundleNames = array_map(function ($b) {
+                return substr($b, 0, -6);
+            }, array_keys($this->getKernel()->getBundles()));
+            $bundle = $io->askWithCompletion('Bundle name', $bundleNames, 'App', false);
         }
+        $input->setArgument('bundle', $this->addBundleSuffix($bundle));
 
         // command name
         if (null !== $name) {
-            $output->writeln(sprintf('Command name: %s', $name));
+            $io->text(sprintf('Command name: <info>%s</info>', $name));
         } else {
-            $output->writeln(array(
-                '',
+            $io->text(array(
                 'Now, provide the name of the command as you type it in the console',
                 '(e.g. <comment>app:my-command</comment>)',
                 '',
             ));
 
-            $question = new Question($questionHelper->getQuestion('Command name', $name), $name);
-            $question->setValidator(function ($answer) {
+            $name = $io->ask('Command name', $name, function ($answer) {
                 if (empty($answer)) {
-                   throw new \RuntimeException('The command name cannot be empty.');
+                    throw new \RuntimeException('The command name cannot be empty.');
                 }
 
                 return $answer;
             });
-            $question->setMaxAttempts(self::MAX_ATTEMPTS);
-
-            $name = $questionHelper->ask($input, $output, $question);
             $input->setArgument('name', $name);
         }
 
-        // summary and confirmation
-        $output->writeln(array(
-            '',
-            $this->getHelper('formatter')->formatBlock('Summary before generation', 'bg=blue;fg-white', true),
-            '',
-            sprintf('You are going to generate a <info>%s</info> command inside <info>%s</info> bundle.', $name, $bundle),
-        ));
-
-        $question = new Question($questionHelper->getQuestion('Do you confirm generation', 'yes', '?'), true);
-        if (!$questionHelper->ask($input, $output, $question)) {
-            $output->writeln('<error>Command aborted</error>');
+        if (!$io->confirm(sprintf('You are going to generate a <info>%s</info> command inside <info>%s</info> bundle.', $name, $bundle))) {
+            $io->error('Command aborted');
 
             return 1;
         }
@@ -145,25 +113,28 @@ EOT
 
     public function execute(InputInterface $input, OutputInterface $output)
     {
-        $questionHelper = $this->getQuestionHelper();
-        $bundle = $input->getArgument('bundle');
+        $io = $this->getStyle($input, $output);
+        $bundle = $this->addBundleSuffix($input->getArgument('bundle'));
         $name = $input->getArgument('name');
 
         try {
-            $bundle = $this->getContainer()->get('kernel')->getBundle($bundle);
+            $bundle = $this->getKernel()->getBundle($bundle);
         } catch (\Exception $e) {
-            $output->writeln(sprintf('<bg=red>Bundle "%s" does not exist.</>', $bundle));
+            $io->error(sprintf('Bundle "%s" does not exist.', $bundle));
+
+            return 1;
         }
 
+        /** @var CommandGenerator $generator */
         $generator = $this->getGenerator($bundle);
         $generator->generate($bundle, $name);
 
-        $output->writeln(sprintf('Generated the <info>%s</info> command in <info>%s</info>', $name, $bundle->getName()));
-        $questionHelper->writeGeneratorSummary($output, array());
+        $io->text(sprintf('Generated the <info>%s</info> command in <info>%s</info>', $name, $bundle->getName()));
+        $io->summary();
     }
 
     protected function createGenerator()
     {
-        return new CommandGenerator($this->getContainer()->get('filesystem'));
+        return new CommandGenerator();
     }
 }

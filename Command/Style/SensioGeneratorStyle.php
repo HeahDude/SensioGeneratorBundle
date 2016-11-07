@@ -42,7 +42,7 @@ class SensioGeneratorStyle extends SymfonyStyle
     /**
      * @param string[] $errors
      */
-    public function summary(array $errors)
+    public function summary(array $errors = array())
     {
         if (!$errors) {
             $this->success('Done! Now get to work :).');

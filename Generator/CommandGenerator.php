@@ -21,13 +21,6 @@ use Symfony\Component\HttpKernel\Bundle\BundleInterface;
  */
 class CommandGenerator extends Generator
 {
-    private $filesystem;
-
-    public function __construct(Filesystem $filesystem)
-    {
-        $this->filesystem = $filesystem;
-    }
-
     public function generate(BundleInterface $bundle, $name)
     {
         $bundleDir = $bundle->getPath();
@@ -36,7 +29,7 @@ class CommandGenerator extends Generator
 
         $commandClassName = $this->classify($name).'Command';
         $commandFile = $commandDir.'/'.$commandClassName.'.php';
-        if ($this->filesystem->exists($commandFile)) {
+        if (file_exists($commandFile)) {
             throw new \RuntimeException(sprintf('Command "%s" already exists', $name));
         }
 

@@ -16,16 +16,18 @@ console command.
 By default the command is run in the interactive mode and asks questions to
 determine the bundle and the command name:
 
-.. code-block:: bash
+.. code-block:: terminal
 
     $ php app/console generate:command
 
-The command can be run in a non interactive mode by using the
-``--no-interaction`` and providing the needed arguments:
+To deactivate the interactive mode, use the ``--no-interaction`` option or its
+alias ``-n`` but don't forget to pass the required argument:
 
-.. code-block:: bash
+.. code-block:: terminal
 
-    $ php app/console generate:command --no-interaction AcmeBlogBundle blog:publish-posts
+    $ php app/console generate:command -n AcmeBlog acme:blog:publish-posts
+
+The "Bundle" suffix is added automatically since version 3.2.
 
 Available Arguments
 -------------------
